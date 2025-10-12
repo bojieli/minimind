@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MiniMind Full SFT")
     parser.add_argument("--out_dir", type=str, default="../out")
     parser.add_argument("--epochs", type=int, default=2)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=12)
     parser.add_argument("--learning_rate", type=float, default=5e-7)
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--dtype", type=str, default="bfloat16")
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     tokens_per_iter = args.batch_size * args.max_seq_len
     device_type = "cuda" if "cuda" in args.device else "cpu"
 
-    args.wandb_run_name = f"MiniMind-Full-SFT-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"
+    args.wandb_run_name = f"MiniMind-Full-SFT-MaxSeqLen-{args.max_seq_len}-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"
 
     ctx = nullcontext() if device_type == "cpu" else torch.cuda.amp.autocast()
     ddp = int(os.environ.get("RANK", -1)) != -1  # is this a ddp run?

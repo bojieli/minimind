@@ -152,7 +152,7 @@ if __name__ == "__main__":
     tokens_per_iter = args.batch_size * args.max_seq_len
     device_type = "cuda" if "cuda" in args.device else "cpu"
 
-    args.wandb_run_name = f"MiniMind-Full-SFT-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"
+    args.wandb_run_name = f"MiniMind-Full-SFT-MaxSeqLen-{args.max_seq_len}-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"
 
     ctx = nullcontext() if device_type == "cpu" else torch.cuda.amp.autocast()
     ddp = int(os.environ.get("RANK", -1)) != -1  # is this a ddp run?
