@@ -13,7 +13,7 @@ def init_model(args):
     tokenizer = AutoTokenizer.from_pretrained('./model/')
     if args.load == 0:
         moe_path = '_moe' if args.use_moe else ''
-        modes = {0: 'pretrain', 1: 'full_sft', 2: 'rlhf', 3: 'reason', 4: 'grpo'}
+        modes = {0: 'pretrain', 1: 'full_sft', 2: 'rlhf', 3: 'reason', 4: 'grpo', 5: 'full_sft_distill'}
         ckp = f'./{args.out_dir}/{modes[args.model_mode]}_{args.hidden_size}{moe_path}.pth'
 
         model = MiniMindForCausalLM(MiniMindConfig(
@@ -107,9 +107,9 @@ def main():
     # MiniMind2-moe (145M)：(hidden_size=640, num_hidden_layers=8, use_moe=True)
     # MiniMind2-Small (26M)：(hidden_size=512, num_hidden_layers=8)
     # MiniMind2 (104M)：(hidden_size=768, num_hidden_layers=16)
-    parser.add_argument('--hidden_size', default=512, type=int)
-    parser.add_argument('--num_hidden_layers', default=8, type=int)
-    parser.add_argument('--max_seq_len', default=8192, type=int)
+    parser.add_argument('--hidden_size', default=768, type=int)
+    parser.add_argument('--num_hidden_layers', default=16, type=int)
+    parser.add_argument('--max_seq_len', default=2048, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
     # 携带历史对话上下文条数
     # history_cnt需要设为偶数，即【用户问题, 模型回答】为1组；设置为0时，即当前query不携带历史上文
@@ -117,7 +117,7 @@ def main():
     parser.add_argument('--history_cnt', default=0, type=int)
     parser.add_argument('--load', default=0, type=int, help="0: 原生torch权重，1: transformers加载")
     parser.add_argument('--model_mode', default=1, type=int,
-                        help="0: 预训练模型，1: SFT-Chat模型，2: RLHF-Chat模型，3: Reason模型，4: RLAIF-Chat模型")
+                        help="0: 预训练模型，1: SFT-Chat模型，2: RLHF-Chat模型，3: Reason模型，4: RLAIF-Chat模型，5：SFT-Distill-Chat模型")
     args = parser.parse_args()
 
     model, tokenizer = init_model(args)
