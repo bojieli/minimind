@@ -159,7 +159,7 @@ class Attention(nn.Module):
         xq, xk = apply_rotary_pos_emb(xq, xk, cos[:seq_len], sin[:seq_len])
 
         # kv_cache实现
-        if past_key_value is not None:
+        if past_key_value is not None and past_key_value[0] is not None:
             xk = torch.cat([past_key_value[0], xk], dim=1)
             xv = torch.cat([past_key_value[1], xv], dim=1)
         past_kv = (xk, xv) if use_cache else None
@@ -381,7 +381,7 @@ class MiniMindModel(nn.Module):
                 **kwargs):
         batch_size, seq_length = input_ids.shape
         past_key_values = past_key_values or [None] * len(self.layers)
-        start_pos = past_key_values[0][0].shape[1] if past_key_values[0] is not None else 0
+        start_pos = past_key_values[0][0].shape[1] if (past_key_values[0] is not None and past_key_values[0][0] is not None) else 0
 
         hidden_states = self.dropout(self.embed_tokens(input_ids))
 

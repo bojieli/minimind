@@ -118,7 +118,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MiniMind Pretraining")
     parser.add_argument("--out_dir", type=str, default="../out")
     # 若要以最快速度实现zero则epochs设置为1轮；否则应当利用有限的数据训练2~6个epochs。
-    parser.add_argument("--epochs", type=int, default=2)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=5e-4)
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
