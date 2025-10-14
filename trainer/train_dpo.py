@@ -183,7 +183,7 @@ if __name__ == "__main__":
     parser.add_argument('--local_rank', type=int, default=-1)
     parser.add_argument('--hidden_size', default=768, type=int)
     parser.add_argument('--num_hidden_layers', default=16, type=int)
-    parser.add_argument('--max_seq_len', default=2048, type=int)
+    parser.add_argument('--max_seq_len', default=3072, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
     parser.add_argument("--data_path", type=str, default="../dataset/dpo.jsonl")
 
