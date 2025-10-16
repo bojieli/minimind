@@ -196,7 +196,7 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         pin_memory=True,
         drop_last=False,
-        shuffle=False,
+        shuffle=(not ddp),
         num_workers=args.num_workers,
         sampler=train_sampler
     )
@@ -205,4 +205,6 @@ if __name__ == "__main__":
     iter_per_epoch = len(train_loader)
 
     for epoch in range(args.epochs):
+        if train_sampler is not None:
+            train_sampler.set_epoch(epoch)
         train_epoch(epoch, wandb)
