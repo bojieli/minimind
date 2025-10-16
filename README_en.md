@@ -332,6 +332,106 @@ needs and GPU resources.
 
 The directory is located at `trainer`
 
+#### 🚀 Complete Training Pipeline Quick Start
+
+<details open>
+<summary><b>Single GPU Training Commands</b></summary>
+
+```bash
+# Step 0: Train Tokenizer (Optional, already provided)
+# Rust version (recommended, faster)
+cd scripts/train_tokenizer_rust && bash run.sh
+# Or Python version
+cd scripts && python train_tokenizer.py
+
+# Step 1: Pretraining (Learn Knowledge)
+cd trainer
+python train_pretrain.py \
+    --data_path ../dataset/pretrain_data.jsonl \
+    --epochs 10 \
+    --batch_size 32 \
+    --learning_rate 5e-4 \
+    --use_wandb
+
+# Step 2: Supervised Fine-Tuning (Learn Dialogue)
+python train_full_sft.py \
+    --data_path ../dataset/sft_data_512.jsonl \
+    --epochs 2 \
+    --batch_size 16 \
+    --learning_rate 5e-7 \
+    --use_wandb
+
+# Step 3: DPO Reinforcement Learning (Optional, Preference Alignment)
+python train_dpo.py \
+    --data_path ../dataset/dpo.jsonl \
+    --epochs 2 \
+    --batch_size 4 \
+    --learning_rate 1e-8 \
+    --use_wandb
+```
+
+</details>
+
+<details>
+<summary><b>8 GPU Distributed Training Commands (DDP)</b></summary>
+
+```bash
+# Step 0: Train Tokenizer (Optional, already provided)
+# Rust version (recommended, faster)
+cd scripts/train_tokenizer_rust && bash run.sh
+# Or Python version
+cd scripts && python train_tokenizer.py
+
+# Step 1: Pretraining (Learn Knowledge) - 8 GPUs
+cd trainer
+torchrun --nproc_per_node=8 train_pretrain.py \
+    --data_path ../dataset/pretrain_data.jsonl \
+    --epochs 10 \
+    --batch_size 32 \
+    --learning_rate 5e-4 \
+    --use_wandb
+
+# Step 2: Supervised Fine-Tuning (Learn Dialogue) - 8 GPUs
+torchrun --nproc_per_node=8 train_full_sft.py \
+    --data_path ../dataset/sft_data_512.jsonl \
+    --epochs 2 \
+    --batch_size 16 \
+    --learning_rate 5e-7 \
+    --use_wandb
+
+# Step 3: DPO Reinforcement Learning (Optional, Preference Alignment) - 8 GPUs
+torchrun --nproc_per_node=8 train_dpo.py \
+    --data_path ../dataset/dpo.jsonl \
+    --epochs 2 \
+    --batch_size 4 \
+    --learning_rate 1e-8 \
+    --use_wandb
+```
+
+**Multi-node Training (Across Servers)**
+
+```bash
+# On master node (node 0):
+torchrun --nproc_per_node=8 --nnodes=2 --node_rank=0 \
+    --master_addr="192.168.1.1" --master_port=29500 \
+    train_pretrain.py --use_wandb [other args...]
+
+# On worker node (node 1):
+torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 \
+    --master_addr="192.168.1.1" --master_port=29500 \
+    train_pretrain.py --use_wandb [other args...]
+```
+
+</details>
+
+**Training Notes:**
+- All training supports `--use_wandb` parameter for training visualization (requires `wandb login` first)
+- Pretraining produces `pretrain_*.pth`, supervised fine-tuning produces `full_sft_*.pth`
+- DDP mode is auto-detected, no need to manually specify `--ddp` parameter
+- Training saves checkpoints every 100 steps to `./out/` directory
+
+---
+
 **3.1 Pretraining (Learning Knowledge)**
 
 ```bash

@@ -117,8 +117,7 @@ def init_distributed_mode():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MiniMind Pretraining")
     parser.add_argument("--out_dir", type=str, default="../out")
-    # 若要以最快速度实现zero则epochs设置为1轮；否则应当利用有限的数据训练2~6个epochs。
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=4)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=5e-4)
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
@@ -137,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_hidden_layers', default=16, type=int)
     parser.add_argument('--max_seq_len', default=512, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
-    parser.add_argument("--data_path", type=str, default="../dataset/pretrain_hq.jsonl")
+    parser.add_argument("--data_path", type=str, default="../dataset/pretrain_data.jsonl")
     args = parser.parse_args()
 
     lm_config = MiniMindConfig(hidden_size=args.hidden_size, num_hidden_layers=args.num_hidden_layers, use_moe=args.use_moe)
@@ -185,6 +184,13 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
         sampler=train_sampler
     )
+    
+    # Log dataset info
+    Logger(f'总数据集大小: {len(train_ds):,} 样本')
+    if ddp:
+        world_size = dist.get_world_size()
+        Logger(f'DDP模式: {world_size} GPUs, 每GPU约 {len(train_ds)//world_size:,} 样本')
+    Logger(f'每Epoch迭代次数: {len(train_loader):,} (batch_size={args.batch_size})')
 
     scaler = torch.cuda.amp.GradScaler(enabled=(args.dtype in ['float16', 'bfloat16']))
     optimizer = optim.AdamW(model.parameters(), lr=args.learning_rate)

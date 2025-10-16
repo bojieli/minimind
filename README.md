@@ -304,32 +304,53 @@ print(torch.cuda.is_available())
 
 目录位于`trainer`
 
-**3.1 预训练（学知识）**
+#### 🚀 完整训练流程快速开始
+
+##### 单 GPU 训练命令
 
 ```bash
-python train_pretrain.py
+# 步骤 0: 训练 Tokenizer（可选，项目已提供）
+# Rust版本（推荐，速度更快）
+cd scripts/train_tokenizer_rust && bash run.sh
+# 或 Python版本
+cd scripts && python train_tokenizer.py
+
+# 步骤 1: 预训练（学知识）
+cd trainer
+python train_pretrain.py --use_wandb
+
+# 步骤 2: 监督微调（学对话）
+python train_full_sft.py --use_wandb
+
+# 步骤 3: DPO强化学习（可选，偏好对齐）
+python train_dpo.py --use_wandb
 ```
 
-> 执行预训练，得到 `pretrain_*.pth` 作为预训练的输出权重（其中*为模型的dimension，默认为512）
-
-
-**3.2 监督微调（学对话方式）**
+##### 8 GPU 并行训练命令（DDP）
 
 ```bash
-python train_full_sft.py
+# 步骤 0: 训练 Tokenizer（可选，项目已提供）
+# Rust版本（推荐，速度更快）
+cd scripts/train_tokenizer_rust && bash build.sh && bash run.sh
+# 或 Python版本
+cd scripts && python train_tokenizer.py
+
+# 步骤 1: 预训练（学知识）- 8 GPU
+cd trainer
+torchrun --nproc_per_node=8 train_pretrain.py --use_wandb
+
+# 步骤 2: 监督微调（学对话）- 8 GPU
+torchrun --nproc_per_node=8 train_full_sft.py --data_path ../dataset/sft_data_512.jsonl --use_wandb
+
+# 步骤 3: DPO强化学习（可选，偏好对齐）- 8 GPU
+torchrun --nproc_per_node=8 train_dpo.py --use_wandb
 ```
 
-> 执行监督微调，得到 `full_sft_*.pth` 作为指令微调的输出权重（其中`full`即为全参数微调）
-
-<details style="color:rgb(128,128,128)">
-<summary>注：训练须知</summary>
-
-所有训练过程默认每隔100步保存1次参数到文件`./out/***.pth`（每次会覆盖掉旧权重文件）。
-
-简单起见，此处只写明两个阶段训练过程。如需其它训练 (LoRA, 蒸馏, 强化学习, 微调推理等) 可参考下文【实验】小节的详细说明。
-
-</details>
-
+**训练说明：**
+- 所有训练支持 `--use_wandb` 参数启用训练可视化（需先 `wandb login`）
+- 预训练得到 `pretrain_*.pth`，监督微调得到 `full_sft_*.pth`
+- DDP模式会自动检测，无需手动指定 `--ddp` 参数
+- 训练过程每隔100步保存一次检查点到 `./out/` 目录
 
 ---
 

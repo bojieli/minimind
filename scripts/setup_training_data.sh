@@ -52,17 +52,22 @@ else
 fi
 echo ""
 
-# Prepare pretrain data
-echo "Step 3: Preparing pretrain data (${PRETRAIN_SIZE_GB}GB)..."
+# Prepare pretrain data with chunking
+echo "Step 3: Preparing pretrain data with chunking (${PRETRAIN_SIZE_GB}GB, max ${MAX_TOKENS_512} tokens)..."
 if [ -f "$DATASET_DIR/pretrain_data.jsonl" ]; then
     echo "pretrain_data.jsonl already exists. Skipping..."
+    echo "To regenerate with chunking, delete the file first:"
+    echo "  rm $DATASET_DIR/pretrain_data.jsonl"
 else
     /root/miniconda3/bin/python scripts/prepare_pretrain_data.py \
       --input_dir "$DATASET_DIR/fineweb_edu_chinese_4_5/4_5" \
       --output_file "$DATASET_DIR/pretrain_data.jsonl" \
       --max_gb $PRETRAIN_SIZE_GB \
-      --min_length 10
-    echo "✓ Pretrain data ready"
+      --min_length 10 \
+      --max_seq_len $MAX_TOKENS_512 \
+      --min_chunk_length 50 \
+      --tokenizer_path model/
+    echo "✓ Pretrain data ready (with chunking for max utilization)"
 fi
 echo ""
 
@@ -91,9 +96,37 @@ echo ""
 echo "Data files created:"
 ls -lh "$DATASET_DIR"/*.jsonl 2>/dev/null || echo "No JSONL files found"
 echo ""
-echo "Next steps:"
-echo "  1. Pretrain: cd trainer && python train_pretrain.py --data_path ../dataset/pretrain_data.jsonl"
-echo "  2. SFT:      cd trainer && python train_full_sft.py --data_path ../dataset/sft_data_512.jsonl"
+echo "========================================================"
+echo "Next Steps - Training Commands"
+echo "========================================================"
 echo ""
-echo "See scripts/DATA_PREPARATION.md for detailed documentation."
+echo "1. Train Tokenizer (Optional, already provided):"
+echo "   Rust version (faster):"
+echo "   cd scripts/train_tokenizer_rust && bash run.sh"
+echo "   Python version:"
+echo "   cd scripts && python train_tokenizer.py"
+echo ""
+echo "2. Pretrain (Learn Knowledge):"
+echo "   Single GPU:"
+echo "   cd trainer && python train_pretrain.py --data_path ../dataset/pretrain_data.jsonl --use_wandb"
+echo ""
+echo "   8 GPUs (DDP):"
+echo "   cd trainer && torchrun --nproc_per_node=8 train_pretrain.py --data_path ../dataset/pretrain_data.jsonl --use_wandb"
+echo ""
+echo "3. Supervised Fine-Tuning (Learn Dialogue):"
+echo "   Single GPU:"
+echo "   cd trainer && python train_full_sft.py --data_path ../dataset/sft_data_512.jsonl --use_wandb"
+echo ""
+echo "   8 GPUs (DDP):"
+echo "   cd trainer && torchrun --nproc_per_node=8 train_full_sft.py --data_path ../dataset/sft_data_512.jsonl --use_wandb"
+echo ""
+echo "4. DPO Training (Optional - Preference Alignment):"
+echo "   Single GPU:"
+echo "   cd trainer && python train_dpo.py --data_path ../dataset/dpo.jsonl --use_wandb"
+echo ""
+echo "   8 GPUs (DDP):"
+echo "   cd trainer && torchrun --nproc_per_node=8 train_dpo.py --data_path ../dataset/dpo.jsonl --use_wandb"
+echo ""
+echo "========================================================"
+echo "See scripts/QUICKSTART.md for detailed documentation."
 
