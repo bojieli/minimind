@@ -117,7 +117,7 @@ def init_distributed_mode():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MiniMind Pretraining")
     parser.add_argument("--out_dir", type=str, default="../out")
-    parser.add_argument("--epochs", type=int, default=4)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=5e-4)
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_hidden_layers', default=16, type=int)
     parser.add_argument('--max_seq_len', default=512, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
-    parser.add_argument("--data_path", type=str, default="../dataset/pretrain_data.jsonl")
+    parser.add_argument("--data_path", type=str, default="../dataset/pretrain_hq.jsonl")
     args = parser.parse_args()
 
     lm_config = MiniMindConfig(hidden_size=args.hidden_size, num_hidden_layers=args.num_hidden_layers, use_moe=args.use_moe)

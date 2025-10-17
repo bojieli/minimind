@@ -109,7 +109,7 @@ def main():
     # MiniMind2 (104M)：(hidden_size=768, num_hidden_layers=16)
     parser.add_argument('--hidden_size', default=768, type=int)
     parser.add_argument('--num_hidden_layers', default=16, type=int)
-    parser.add_argument('--max_seq_len', default=2048, type=int)
+    parser.add_argument('--max_seq_len', default=512, type=int)
     parser.add_argument('--use_moe', default=False, type=bool)
     # 携带历史对话上下文条数
     # history_cnt需要设为偶数，即【用户问题, 模型回答】为1组；设置为0时，即当前query不携带历史上文

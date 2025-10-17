@@ -320,11 +320,14 @@ the [dataset download link](https://www.modelscope.cn/datasets/gongjy/minimind_d
 <details style="color:rgb(128,128,128)">
 <summary>Note: Dataset Information</summary>
 
-By default, it is recommended to download `pretrain_hq.jsonl` + `sft_mini_512.jsonl` for the fastest Zero-chat model
-reproduction.
+**Recommended: Use MiniMind Original Dataset (Default Configuration):**
+- `pretrain_hq.jsonl` (1.6GB) - Pretrain dataset, already preprocessed
+- `sft_512.jsonl` (7.5GB) - Supervised fine-tuning dataset
+- `dpo.jsonl` (909MB) - DPO reinforcement learning dataset
 
-You can freely choose data files. Various combinations are provided below, and you can select according to your training
-needs and GPU resources.
+These datasets contain simpler knowledge and are more suitable for small LLMs to learn, with better training results. The training scripts are configured to use these datasets by default.
+
+You can freely choose data files. Various combinations are provided below, and you can select according to your training needs and GPU resources.
 
 </details>
 
@@ -344,18 +347,18 @@ cd scripts/train_tokenizer_rust && bash run.sh
 # Or Python version
 cd scripts && python train_tokenizer.py
 
-# Step 1: Pretraining (Learn Knowledge)
+# Step 1: Pretraining (Learn Knowledge) - Using pretrain_hq.jsonl, 10 epochs
 cd trainer
 python train_pretrain.py \
-    --data_path ../dataset/pretrain_data.jsonl \
+    --data_path ../dataset/pretrain_hq.jsonl \
     --epochs 10 \
     --batch_size 32 \
     --learning_rate 5e-4 \
     --use_wandb
 
-# Step 2: Supervised Fine-Tuning (Learn Dialogue)
+# Step 2: Supervised Fine-Tuning (Learn Dialogue) - Using sft_512.jsonl, 2 epochs
 python train_full_sft.py \
-    --data_path ../dataset/sft_data_512.jsonl \
+    --data_path ../dataset/sft_512.jsonl \
     --epochs 2 \
     --batch_size 16 \
     --learning_rate 5e-7 \
@@ -382,18 +385,18 @@ cd scripts/train_tokenizer_rust && bash run.sh
 # Or Python version
 cd scripts && python train_tokenizer.py
 
-# Step 1: Pretraining (Learn Knowledge) - 8 GPUs
+# Step 1: Pretraining (Learn Knowledge) - 8 GPUs, Using pretrain_hq.jsonl, 10 epochs
 cd trainer
 torchrun --nproc_per_node=8 train_pretrain.py \
-    --data_path ../dataset/pretrain_data.jsonl \
+    --data_path ../dataset/pretrain_hq.jsonl \
     --epochs 10 \
     --batch_size 32 \
     --learning_rate 5e-4 \
     --use_wandb
 
-# Step 2: Supervised Fine-Tuning (Learn Dialogue) - 8 GPUs
+# Step 2: Supervised Fine-Tuning (Learn Dialogue) - 8 GPUs, Using sft_512.jsonl, 2 epochs
 torchrun --nproc_per_node=8 train_full_sft.py \
-    --data_path ../dataset/sft_data_512.jsonl \
+    --data_path ../dataset/sft_512.jsonl \
     --epochs 2 \
     --batch_size 16 \
     --learning_rate 5e-7 \
@@ -657,46 +660,110 @@ Big respect!
 
 ---
 
+## Ⅶ Custom Dataset Preparation (Advanced)
+
+<details style="color:rgb(128,128,128)">
+<summary>How to prepare your own training data from large-scale datasets like chinese-fineweb</summary>
+
+If you want to prepare your own training data from scratch, you can use the following scripts to extract and process data from large-scale raw datasets (such as chinese-fineweb).
+
+**Note:** Training data extracted from large-scale general datasets like chinese-fineweb usually contains complex knowledge that is harder for small LLMs (like MiniMind) to learn, and training results may not be as good as using the MiniMind original dataset. Therefore, **this method is only recommended for users with special needs or who want to experiment with different data sources.**
+
+### Data Preparation Steps
+
+1. **Download Raw Dataset**
+   ```bash
+   # Download chinese-fineweb or other datasets from HuggingFace
+   # Or obtain raw text data from other sources
+   ```
+
+2. **Prepare Pretraining Data**
+   ```bash
+   cd scripts
+   python prepare_pretrain_data.py
+   ```
+   This script will process raw text data and format it into the jsonl format required for pretraining.
+
+3. **Prepare SFT Data**
+   ```bash
+   python prepare_sft_data.py
+   ```
+   This script will process dialogue data and format it for SFT.
+
+4. **Prepare All Data at Once (Optional)**
+   ```bash
+   bash setup_training_data.sh
+   ```
+   This script will automatically execute all data preparation steps.
+
+5. **Train with Custom Dataset**
+   
+   **Single GPU Training:**
+   ```bash
+   cd ../trainer
+   # Pretraining (4 epochs recommended for custom datasets)
+   python train_pretrain.py --data_path ../dataset/your_pretrain_data.jsonl --epochs 4 --use_wandb
+   # SFT (2 epochs recommended)
+   python train_full_sft.py --data_path ../dataset/your_sft_data.jsonl --epochs 2 --use_wandb
+   ```
+   
+   **8 GPU Parallel Training (DDP):**
+   ```bash
+   cd ../trainer
+   # Pretraining (4 epochs recommended for custom datasets)
+   torchrun --nproc_per_node=8 train_pretrain.py --data_path ../dataset/your_pretrain_data.jsonl --epochs 4 --use_wandb
+   # SFT (2 epochs recommended)
+   torchrun --nproc_per_node=8 train_full_sft.py --data_path ../dataset/your_sft_data.jsonl --epochs 2 --use_wandb
+   ```
+
+**Data Format Requirements:**
+- Pretrain data format: `{"text": "Your text content..."}`
+- SFT data format: `{"conversations": [{"role": "user", "content": "Question"}, {"role": "assistant", "content": "Answer"}]}`
+
+</details>
+
 ## Ⅷ MiniMind Dataset Download
 
 > [!NOTE]
-> After `2025-02-05`, MiniMind’s open-source datasets for final training are provided, so there is no need for
+> After `2025-02-05`, MiniMind's open-source datasets for final training are provided, so there is no need for
 > you to preprocess large datasets by yourself anymore. This helps avoid redundant work.
+> 
+> **It is recommended to use the MiniMind original dataset for training, as these datasets contain simpler knowledge that is more suitable for small LLMs to learn.** If you need to prepare your own dataset from sources like chinese-fineweb, please refer to the "Custom Dataset Preparation" section above.
 
 Available for download from:
 [ModelScope](https://www.modelscope.cn/datasets/gongjy/minimind_dataset/files) | [HuggingFace](https://huggingface.co/datasets/jingyaogong/minimind_dataset/tree/main)
 
 > You don’t need to clone everything, just download the necessary files.
 
-Place the downloaded dataset files in the `./dataset/` directory (✨ required files are marked):
+Place the downloaded dataset files in the `./dataset/` directory (✨ default recommended configuration):
 
 ```bash
 ./dataset/
-├── dpo.jsonl (909MB)
+├── dpo.jsonl (909MB, ✨default)
 ├── lora_identity.jsonl (22.8KB)
 ├── lora_medical.jsonl (34MB)
-├── pretrain_hq.jsonl (1.6GB, ✨)
+├── pretrain_hq.jsonl (1.6GB, ✨default)
 ├── r1_mix_1024.jsonl (340MB)
 ├── sft_1024.jsonl (5.6GB)
 ├── sft_2048.jsonl (9GB)
-├── sft_512.jsonl (7.5GB)
-├── sft_mini_512.jsonl (1.2GB, ✨)
+├── sft_512.jsonl (7.5GB, ✨default)
+├── sft_mini_512.jsonl (1.2GB)
 └── tokenizer_train.jsonl (1GB)
 ```
 
 <details style="color:rgb(128,128,128)">
   <summary>Dataset Descriptions</summary>
 
-* `dpo.jsonl` -- RLHF dataset
+* `dpo.jsonl`✨ -- RLHF dataset (**Default configuration**)
 * `lora_identity.jsonl` -- Self-identity dataset (e.g., "Who are you? I'm MiniMind..."), recommended for LoRA training (
   also applicable for full parameter SFT)
 * `lora_medical.jsonl` -- Medical Q&A dataset, recommended for LoRA training (also applicable for full parameter SFT)
-* `pretrain_hq.jsonl`✨ -- Pretraining dataset from Jiangshu Technology
+* `pretrain_hq.jsonl`✨ -- Pretraining dataset from Jiangshu Technology (**Default configuration, training scripts default to 10 epochs**)
 * `r1_mix_1024.jsonl` -- DeepSeek-R1-1.5B distilled dataset (max length 1024 characters)
 * `sft_1024.jsonl` -- Qwen2.5 distilled data (subset of sft_2048, max length 1024)
 * `sft_2048.jsonl` -- Qwen2.5 distilled data (max length 2048)
-* `sft_512.jsonl` -- Jiangshu SFT dataset (max length 512)
-* `sft_mini_512.jsonl`✨ -- Minimal Jiangshu + Qwen2.5 distilled dataset (max length 512)
+* `sft_512.jsonl`✨ -- Jiangshu SFT dataset (max length 512) (**Default configuration, training scripts default to 2 epochs**)
+* `sft_mini_512.jsonl` -- Minimal Jiangshu + Qwen2.5 distilled dataset for quick Zero model training (max length 512)
 * `tokenizer_train.jsonl` -- From Jiangshu Large Model Dataset (not recommended for custom tokenizer training)
 
 </details>
@@ -707,19 +774,16 @@ Place the downloaded dataset files in the `./dataset/` directory (✨ required f
 <details style="color:rgb(128,128,128)">
 <summary>Explanation & Recommended Training Plans</summary>
 
-* The MiniMind2 Series has been trained on approximately 20GB of corpus, or about 4B tokens, corresponding to the data
-  combination results above (Cost: 💰💰💰💰💰💰💰💰, Effect: 😊😊😊😊😊😊).
+**[Recommended] Default Configuration - MiniMind Original Dataset:**
+* **`pretrain_hq.jsonl` + `sft_512.jsonl` + `dpo.jsonl`** (Default, training scripts configured)
+* These datasets contain simpler knowledge and are more suitable for small LLMs to learn, with better training results
+* Pretrain 10 epochs, SFT 2 epochs, DPO 2 epochs
+* Cost: 💰💰💰, Effect: 😊😊😊😊
 
-* For the fastest Zero-model implementation from scratch, it is recommended to use the data combination
-  of `pretrain_hq.jsonl` + `sft_mini_512.jsonl`. The specific costs and effects can be seen in the table below (Cost:
-  💰, Effect: 😊😊).
-
-* For those with sufficient computational resources or more focus on results, it is advisable to fully reproduce
-  MiniMind2 with the first option; if you only have a single GPU or prefer a quick reproduction within a short time, the
-  second option is strongly recommended.
-
-* [Compromise Plan] You can also freely combine medium-sized data like `sft_mini_512.jsonl`, `sft_1024.jsonl` for
-  training (Cost: 💰💰💰, Effect: 😊😊😊😊).
+**[Quick Version] Zero Model Fast Reproduction:**
+* Use `pretrain_hq.jsonl` + `sft_mini_512.jsonl` for the fastest Zero-chat model reproduction
+* Suitable for single GPU or those who prefer quick reproduction within a short time
+* Cost: 💰, Effect: 😊😊
 
 </details>
 
