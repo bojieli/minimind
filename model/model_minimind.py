@@ -141,6 +141,9 @@ class Attention(nn.Module):
         self.resid_dropout = nn.Dropout(args.dropout)
         self.dropout = args.dropout
         self.flash = hasattr(torch.nn.functional, 'scaled_dot_product_attention') and args.flash_attn
+        # QK Normalization for training stability (Qwen3-style)
+        self.q_norm = RMSNorm(self.head_dim, eps=1e-6)
+        self.k_norm = RMSNorm(self.head_dim, eps=1e-6)
         # print("WARNING: using slow attention. Flash Attention requires PyTorch >= 2.0")
 
     def forward(self,
@@ -154,6 +157,10 @@ class Attention(nn.Module):
         xq = xq.view(bsz, seq_len, self.n_local_heads, self.head_dim)
         xk = xk.view(bsz, seq_len, self.n_local_kv_heads, self.head_dim)
         xv = xv.view(bsz, seq_len, self.n_local_kv_heads, self.head_dim)
+
+        # Apply QK normalization before RoPE (Qwen3-style)
+        xq = self.q_norm(xq)
+        xk = self.k_norm(xk)
 
         cos, sin = position_embeddings
         xq, xk = apply_rotary_pos_emb(xq, xk, cos[:seq_len], sin[:seq_len])
